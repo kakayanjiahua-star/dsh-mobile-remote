@@ -110,6 +110,12 @@ powershell -File scripts\ds-patch-cgnat.ps1
 6. 切模式（WiFi↔互联网）前**必须先断开已连手机**，否则接口返回 409。
 7. 通知脚本要**保证失败也不影响 agent**：任何异常都 `exit 0`、不阻塞、不输出决策 JSON。
 
+8. **PowerShell 5.1 传给原生命令的 JSON 参数会被吞掉双引号** —— `curl.exe ... -d '{"a":1}'` 到达 curl 时
+   引号已被剥离，服务端直接报 `Expected property name or '}' in JSON at position 1`。
+   症状极隐蔽：**请求确实发出去了，只是永远失败**；调用方若不检查响应就会静默失败
+   （本项目就因此让"自动开隧道"和"自动批准"长期失效）。
+   **对策：把 JSON 写进临时文件，用 `--data-binary "@file"` 发送**（`ds-phone-notify.ps1` 与
+   `ds-mobile-bridge.ps1` 均如此），并**把响应写进日志**，否则失败无声。
 ## 3. 验证清单（部署完逐条打勾）
 
 ```powershell

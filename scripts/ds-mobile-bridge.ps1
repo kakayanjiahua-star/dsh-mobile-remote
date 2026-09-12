@@ -5,7 +5,7 @@
 #  4) 持续写 ds-mobile-url.txt 与 ds-mobile-bridge.log。
 param([switch]$Once)
 $ErrorActionPreference = 'SilentlyContinue'
-$cfgDir   = if ($env:DSH_MOBILE_DIR) { $env:DSH_MOBILE_DIR } elseif ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
+$cfgDir   = 'D:/DeepSeekHarness'
 $statePath= "$cfgDir/ds-mobile-state.json"
 $urlPath  = "$cfgDir/ds-mobile-url.txt"
 $keyPath  = "$cfgDir/ds-phone-notify.json"
@@ -31,13 +31,15 @@ function Get-Json($path) {
 function Post-Json($path, $obj) {
   try {
     $body = $obj | ConvertTo-Json -Compress
-    $out = (& curl.exe -s --noproxy "*" --max-time 20 -X POST -H "Content-Type: application/json" -d $body ($Base + $path) 2>$null | Out-String).Trim()
+    $tmp = Join-Path $env:TEMP ('ds-post-' + [guid]::NewGuid().ToString('N') + '.json')
+    [System.IO.File]::WriteAllText($tmp, $body, (New-Object System.Text.UTF8Encoding($false)))
+    $out = (& curl.exe -s --noproxy "*" --max-time 25 -X POST -H "Content-Type: application/json" --data-binary "@$tmp" ($Base + $path) 2>$null | Out-String).Trim()
+    Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue
     Log-Msg "post $path -> $out"
     if (-not $out) { return $null }
     return ($out | ConvertFrom-Json)
   } catch { Log-Msg "post $path failed: $($_.Exception.Message)"; return $null }
-}
-function Gateway-Pid { $c = Get-NetTCPConnection -LocalPort $GW_PORT -State Listen -ErrorAction SilentlyContinue; if ($c) { $c[0].OwningProcess } else { $null } }
+}function Gateway-Pid { $c = Get-NetTCPConnection -LocalPort $GW_PORT -State Listen -ErrorAction SilentlyContinue; if ($c) { $c[0].OwningProcess } else { $null } }
 function Lan-Url {
   # 只取“有默认网关”的真实网卡地址（手机可达），避免误选 WSL/Hyper-V/Wi-Fi Direct 等虚拟网卡
   $gw = Get-NetRoute -DestinationPrefix '0.0.0.0/0' -ErrorAction SilentlyContinue |
@@ -75,7 +77,12 @@ function Push-Msg($title, $body, $url) {
 }
 
 Log-Msg "monitor v4 start pid=$PID"
+# 隧道意图：以“标志文件”为准（避免运行中的监视器用内存态覆盖手工修改）
+$flagOn  = Join-Path $cfgDir 'ds-mobile-tunnel.on'    # 存在 => 希望隧道保持开启
+$flagOff = Join-Path $cfgDir 'ds-mobile-tunnel.off'   # 存在 => 明确不要隧道
 $state = Read-State
+if (Test-Path -LiteralPath $flagOn)  { $state.tunnelDesired = $true }
+if (Test-Path -LiteralPath $flagOff) { $state.tunnelDesired = $false }
 if (-not $state) { $state = [pscustomobject]@{ lastGatewayPid=$null; tunnelDesired=$true; lastTunnelUrl=''; lastToggleAt=$null; toggleAttempts=0; lastLanUrl='' } }
 foreach ($f in 'lastGatewayPid','tunnelDesired','lastTunnelUrl','lastToggleAt','toggleAttempts','lastLanUrl') {
   if ($null -eq $state.$f -and $f -notin 'lastToggleAt') { $state | Add-Member -NotePropertyName $f -NotePropertyValue '' -Force }
@@ -133,6 +140,19 @@ for (;;) {
       Push-Msg 'DSH 手机访问地址已变' "电脑局域网地址变了(原 $prev)。点此用新地址连接。" $lan
     } else { Log-Msg "lan url recorded: $lan" }
   }
+
+  # --- 可选：自动批准手机配对请求（默认关闭；需显式创建 ds-mobile-autoapprove.on）---
+  # 说明：开启后，电脑重启不再需要你在电脑上点“允许”，手机重新连接即自动放行。
+  # 代价：任何拿到隧道链接的人也能不经过你批准就进来（网关有文件读写/命令执行能力）。
+  if (Test-Path -LiteralPath (Join-Path $cfgDir 'ds-mobile-autoapprove.on')) {
+    $pending = Get-Json '/desktop/pending'
+    if ($pending -and $pending.id) {
+      Log-Msg "auto-approving pairing id=$($pending.id) from=$($pending.remoteAddress) mode=$($pending.mode)"
+      $null = Post-Json '/desktop/decide' @{ id = $pending.id; approved = $true }
+      Push-Msg 'DSH 已自动批准一台设备' '按你的设置（autoapprove 已开启），已自动放行这次连接请求。' ''
+    }
+  }
+
   Write-State $state
   if ($Once) { break }
   Start-Sleep -Seconds 12
