@@ -19,9 +19,8 @@ check() {
   pattern="$1"; label="$2"; allow="${3:-}"
   for f in $files; do
     case "$f" in .githooks/*) continue ;; esac          # never scan this hook itself
-    content=$(git show ":$f" 2>/dev/null) || continue
-    [ -z "$content" ] && continue
-    hits=$(printf '%s\n' "$content" | grep -InE "$pattern" || true)
+    # pipe straight into grep: binary files yield no matches and no NUL warnings
+    hits=$(git show ":$f" 2>/dev/null | grep -InE "$pattern" || true)
     if [ -n "$allow" ]; then
       hits=$(printf '%s\n' "$hits" | grep -vE "$allow" || true)
     fi
