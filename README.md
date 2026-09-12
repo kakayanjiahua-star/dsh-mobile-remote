@@ -93,6 +93,22 @@ notepad D:\dsh\ds-phone-notify.json
 - iPhone 12 Pro Max（iOS 26.x，Safari）
 - 中国移动宽带 + 5G；电脑侧有代理（mihomo/Clash）
 
+## 发布前隐私闸门（版本化提交钩子）
+
+仓库自带 `.githooks/pre-commit`：提交时会扫描**暂存内容**，命中即拒绝提交 ——
+真实 Bark key / ntfy topic、GitHub token、`sk-` 密钥、64 位十六进制串、
+Tailscale `100.64/10` 与内网地址、私人 Windows 用户路径、邮箱、个人账号名。
+
+克隆后**启用一次**：
+
+```bash
+git config core.hooksPath .githooks
+```
+
+确有需要时可用 `git commit --no-verify` 跳过（不建议）。
+经验：**一旦密钥推错，仅补一个"修复提交"不够**——密钥仍在历史里，必须 `git commit --amend`
+（或 `git filter-repo`）后强推，并轮换该密钥。
+
 ## 安全
 
 网关拥有**文件读写与命令执行**能力。请只在可信网络暴露，公网隧道 URL 含 5 分钟有效的一次性配对
