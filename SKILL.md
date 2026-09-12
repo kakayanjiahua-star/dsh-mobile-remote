@@ -1,10 +1,10 @@
 ---
-name: dsh-mobile-remote
+name: dsh-phone-console
 description: Turn a phone (iPhone/Android) into a remote console for DeepSeek Harness Desktop on Windows — watch agent tasks live, dispatch new tasks, answer agent questions, and receive push notifications when a task finishes — over home Wi-Fi, 5G, or a Cloudflare/Tailscale tunnel. Use when the user wants to observe and command their desktop agent harness from a phone, wants a "Codex mobile"-like experience, needs phone push notifications for long-running agent tasks, or is troubleshooting phone access (page won't open, address keeps changing, remote access outside home).
 whenToUse: 用户想让手机远程观察与指挥电脑上的 DSH / 智能体：实时看任务进度、下任务、回答提问、任务完成推到手机；或要求"类似 Codex 手机版"的体验；或手机端打不开、访问地址老变、需要外网（5G）访问、需要固定网址时使用。
 ---
 
-# DSH 手机远程（dsh-mobile-remote）
+# DSH 手机远程（dsh-phone-console）
 
 把 Windows 上的 **DeepSeek Harness Desktop** 变成可用手机遥控的 agent：
 **实时看进度 → 下任务 → 收完成通知**，家里 WiFi、外出 5G、换网络都能用。

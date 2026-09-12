@@ -1,6 +1,6 @@
 #!/bin/sh
 # ---------------------------------------------------------------------------
-# dsh-mobile-remote pre-commit privacy guard
+# dsh-phone-console pre-commit privacy guard
 #
 # Blocks commits that would publish secrets or personal data.
 # Scans the STAGED content of every added/modified file; binary files are

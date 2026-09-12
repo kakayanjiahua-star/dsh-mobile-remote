@@ -1,4 +1,4 @@
-# dsh-mobile-remote
+# dsh-phone-console
 
 > 把 Windows 上的 **DeepSeek Harness Desktop** 变成手机可遥控的 agent：
 > **实时看任务进度 → 手机下任务 → 任务完成推到手机**，家里 WiFi / 外出 5G / 换网络都能用。
@@ -55,8 +55,8 @@ DSH Desktop **本身已内置**手机网关（配对二维码 + 手机页面 + �
 
 ```powershell
 # 1) 克隆
-git clone https://github.com/kakayanjiahua-star/dsh-mobile-remote.git
-cd dsh-mobile-remote
+git clone https://github.com/kakayanjiahua-star/dsh-phone-console.git
+cd dsh-phone-console
 
 # 2) 一键安装（复制脚本、写配置、挂 hooks、注册自启）
 powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -InstallDir "D:\dsh"
@@ -127,7 +127,7 @@ MIT
 <a id="english"></a>
 ## English
 
-**dsh-mobile-remote** turns **DeepSeek Harness Desktop** on Windows into a phone-controllable agent:
+**dsh-phone-console** turns **DeepSeek Harness Desktop** on Windows into a phone-controllable agent:
 watch agent tasks live, dispatch new tasks, answer agent questions, and get **push notifications with a
 tap-through link** when a task finishes — over home Wi-Fi, 5G, or a Cloudflare/Tailscale tunnel.
 

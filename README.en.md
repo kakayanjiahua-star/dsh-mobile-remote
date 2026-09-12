@@ -1,4 +1,4 @@
-# dsh-mobile-remote
+# dsh-phone-console
 
 **English** | [中文](README.md)
 
@@ -57,8 +57,8 @@ All seven are solved and scripted here.
 ## Quick start
 
 ```powershell
-git clone https://github.com/kakayanjiahua-star/dsh-mobile-remote.git
-cd dsh-mobile-remote
+git clone https://github.com/kakayanjiahua-star/dsh-phone-console.git
+cd dsh-phone-console
 
 # 1) one-click deploy: runtime scripts + hooks bridge + auto-start
 powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -InstallDir "D:\dsh"

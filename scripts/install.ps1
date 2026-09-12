@@ -1,5 +1,5 @@
-<#
-    dsh-mobile-remote installer
+﻿<#
+    dsh-phone-console installer
     ------------------------------------------------------------------
     Deploys the phone-remote runtime for DeepSeek Harness Desktop:
       1. copies runtime scripts into -InstallDir
@@ -74,7 +74,7 @@ if (-not $ProfilePatchPath -or -not (Test-Path -LiteralPath $ProfilePatchPath)) 
     } else {
         Copy-Item -LiteralPath $ProfilePatchPath -Destination "$ProfilePatchPath.bak" -Force
         $block = @"
-# dsh-mobile-remote: phone notifications (turn finished / agent asked a question)
+# dsh-phone-console: phone notifications (turn finished / agent asked a question)
 - insert:
     - id: hooks-codex
       name: '@deepseek-ai/dsh-hooks-codex'
