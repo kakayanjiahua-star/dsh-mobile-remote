@@ -1,0 +1,16 @@
+# never commit real push credentials
+ds-phone-notify.json
+!scripts/ds-phone-notify.example.json
+
+# runtime state produced on the machine that installs this
+ds-mobile-url.txt
+ds-mobile-state.json
+ds-mobile-bridge.log
+*.bak
+*.bak-cgnat
+
+# editors / OS
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini

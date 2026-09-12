@@ -1,0 +1,27 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File __INSTALL_DIR__/ds-phone-notify.ps1 -Event stop",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "ask_user_question",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File __INSTALL_DIR__/ds-phone-notify.ps1 -Event question",
+            "timeout": 20
+          }
+        ]
+      }
+    ]
+  }
+}
