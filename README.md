@@ -3,7 +3,11 @@
 > 把 Windows 上的 **DeepSeek Harness Desktop** 变成手机可遥控的 agent：
 > **实时看任务进度 → 手机下任务 → 任务完成推到手机**，家里 WiFi / 外出 5G / 换网络都能用。
 
-[English](#english) · 中文
+[English](README.en.md) · 中文
+
+![preview](docs/preview.png)
+
+*左：会话列表 + 实时状态；右：实时直播（思考 / 工具调用 / 逐字输出）。示例为**合成假数据**，不含任何个人信息。*
 
 ---
 

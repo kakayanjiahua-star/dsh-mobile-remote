@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Pocket Harness preview (synthetic mockup, no real data)</title>
+<style>
+  :root{
+    --paper:#141416; --card:#1d1d20; --line:#303034; --ink:#f5f5f6; --muted:#95979d;
+    --brand:#6f86ff; --hover:#29292d; --surface:#202023; --ok:#75c991;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; padding:34px 28px; background:#0d0d0f; color:var(--ink);
+    font:14px/1.55 -apple-system,"Segoe UI",Roboto,"Microsoft YaHei",sans-serif;
+    display:flex; gap:30px; align-items:flex-start; justify-content:center;
+  }
+  .stage{display:flex; flex-direction:column; align-items:center; gap:12px}
+  .caption{color:var(--muted); font-size:12px; letter-spacing:.02em}
+  .phone{
+    width:390px; height:800px; background:var(--paper); border:1px solid var(--line);
+    border-radius:34px; padding:16px 16px 12px; display:flex; flex-direction:column;
+    box-shadow:0 26px 60px rgba(0,0,0,.55); overflow:hidden;
+  }
+  header{display:flex; align-items:center; justify-content:space-between; height:40px; flex:none}
+  .brand{display:flex; align-items:center; gap:9px; font-weight:600; font-size:14px}
+  .dot{width:8px; height:8px; border-radius:50%; background:var(--ok); box-shadow:0 0 0 0 rgba(117,201,145,.5); animation:none}
+  .hero{display:flex; align-items:flex-end; justify-content:space-between; padding:10px 2px 12px}
+  .hero h1{margin:0; font-size:25px; line-height:1.15; letter-spacing:-.035em}
+  .hero p{margin:0 0 2px; color:var(--muted); font-size:11px}
+  .new{flex:none; height:34px; padding:0 12px; border-radius:11px; border:1px solid var(--ink); background:var(--ink); color:var(--paper); font-weight:600; font-size:13px; display:flex; align-items:center; gap:6px}
+  .panel{border:1px solid var(--line); border-radius:14px; background:var(--surface); padding:10px; margin-bottom:12px}
+  .label{display:block; margin:0 2px 6px; color:var(--muted); font-size:10px; font-weight:600; letter-spacing:.08em; text-transform:uppercase}
+  select{width:100%; height:36px; border-radius:10px; border:1px solid var(--line); background:var(--card); color:var(--ink); padding:0 10px; font-size:13px}
+  .list-head{display:flex; align-items:center; justify-content:space-between; padding:8px 2px 8px}
+  .list-head strong{font-size:13px}
+  .count{min-width:22px; height:19px; border-radius:999px; background:var(--surface); color:var(--muted); font-size:11px; display:grid; place-items:center}
+  .list{display:flex; flex-direction:column; gap:8px; overflow:hidden}
+  .row{display:flex; align-items:center; gap:11px; padding:11px; border:1px solid var(--line); border-radius:15px; background:var(--card)}
+  .mark{display:grid; place-items:center; width:32px; height:32px; border-radius:10px; background:var(--surface); flex:none}
+  .row b{display:block; font-weight:600; font-size:13.5px}
+  .row time{color:var(--muted); font-size:11px}
+  .chev{margin-left:auto; color:var(--muted)}
+  /* chat view */
+  .msgs{flex:1; display:flex; flex-direction:column; gap:12px; padding:6px 4px; overflow:hidden}
+  .u{align-self:flex-end; max-width:80%; background:var(--hover); border-radius:20px; padding:9px 14px; font-size:13.5px}
+  .a{font-size:13.5px}
+  .think{border:1px solid var(--line); border-radius:10px; padding:8px 10px; background:var(--card); color:var(--muted); font-size:12.5px; display:flex; gap:8px; align-items:center}
+  .tool{border:1px solid var(--line); border-radius:10px; padding:8px 10px; background:var(--card); font-size:12.5px}
+  .tool .nm{color:var(--ink); font-weight:600}
+  .tool .st{color:var(--ok); margin-left:6px}
+  pre{margin:8px 0 0; padding:9px 10px; background:#0f0f11; border:1px solid var(--line); border-radius:9px; font:11.5px/1.5 ui-monospace,Consolas,monospace; color:#c9ccd3; overflow:hidden}
+  .todos{margin:2px 0 8px; border:1px solid var(--line); border-radius:12px; background:var(--surface); padding:9px 11px; font-size:12px}
+  .todos b{font-size:12.5px}
+  .todos .p{color:var(--muted)}
+  .bar{flex:none; display:flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:22px; background:var(--card); padding:8px 8px 8px 15px; margin-top:6px}
+  .bar span{flex:1; color:var(--muted); font-size:13.5px}
+  .send{flex:none; width:34px; height:34px; border-radius:50%; background:var(--ink); color:var(--paper); display:grid; place-items:center; font-size:15px}
+  .badge{display:inline-block; margin-left:6px; padding:1px 7px; border:1px solid var(--line); border-radius:999px; color:var(--muted); font-size:10.5px}
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="phone">
+      <header>
+        <div class="brand"><span>🐳</span><span>DSH Desktop</span></div>
+        <div class="dot"></div>
+      </header>
+      <div class="hero">
+        <div><p>移动工作台</p><h1>继续对话</h1></div>
+        <button class="new">＋ 新会话</button>
+      </div>
+      <div class="panel">
+        <span class="label">当前工作区</span>
+        <select><option>D:\projects\demo-workspace</option></select>
+      </div>
+      <div class="list-head"><strong>最近会话</strong><span class="count">4</span></div>
+      <div class="list">
+        <div class="row"><span class="mark">💬</span><span><b>把三个月销售数据做成图表</b><time>刚刚 · 运行中</time></span><span class="chev">›</span></div>
+        <div class="row"><span class="mark">💬</span><span><b>批量重命名下载目录里的文件</b><time>12 分钟前 · 完成</time></span><span class="chev">›</span></div>
+        <div class="row"><span class="mark">💬</span><span><b>整理会议记录成 Markdown</b><time>1 小时前 · 完成</time></span><span class="chev">›</span></div>
+        <div class="row"><span class="mark">💬</span><span><b>调研竞品定价并出对比表</b><time>昨天 · 完成</time></span><span class="chev">›</span></div>
+      </div>
+      <div class="bar"><span>给智能体发消息</span><span class="send">↑</span></div>
+    </div>
+    <div class="caption">会话列表 · 实时状态</div>
+  </div>
+
+  <div class="stage">
+    <div class="phone">
+      <header>
+        <div class="brand"><span>‹</span><span>把三个月销售数据做成图表</span></div>
+        <div class="dot"></div>
+      </header>
+      <div class="msgs">
+        <div class="u">把这三个月的数据整理成一张折线图，顺便算出环比。</div>
+        <div class="a">
+          <div class="think">💭 思考中 · 先看数据文件的列结构，再决定用哪种图</div>
+          <pre>› ls data/ &amp;&amp; head -3 sales.csv
+month,revenue,orders
+2026-07,182340,912
+2026-08,201875,1043</pre>
+          <div class="tool" style="margin-top:10px"><span class="nm">python · make_chart.py</span><span class="st">✓ 完成</span>
+            <pre>saved: out/revenue_trend.png (1680×1050)
+环比：+10.7% / +8.9%</pre>
+          </div>
+          <div style="margin-top:10px">图表已生成，环比数据：<b>7→8 月 +10.7%</b>、<b>8→9 月 +8.9%</b>。文件在 <code>out/revenue_trend.png</code>。</div>
+        </div>
+      </div>
+      <div class="todos"><b>任务</b><span class="badge">1 进行中 · 1 待处理</span><div class="p">· 读取并校验 CSV&nbsp;&nbsp;· 生成折线图&nbsp;&nbsp;· 计算环比</div></div>
+      <div class="bar"><span>给智能体发消息</span><span class="send">↑</span></div>
+    </div>
+    <div class="caption">实时直播 · 思考 / 工具 / 逐字输出</div>
+  </div>
+</body>
+</html>
