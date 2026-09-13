@@ -1,11 +1,12 @@
-﻿# DSH Mobile 自动隧道 / 访问地址监视器 (v4)
+﻿# DSH Mobile 自动隧道 / 访问地址监视器 (v5)
 #  1) 桌面重启后若之前开过隧道 → 自动重新开启(手机不在线时)；
-#  2) 隧道 URL 变化 → 推送新链接到手机；
-#  3) 局域网 IP 变化 → 也推送新地址到手机(避免换了 IP 手机打不开)；
-#  4) 持续写 ds-mobile-url.txt 与 ds-mobile-bridge.log。
+#  2) 隧道地址**验证公网可用后**才推送到手机（避免推送"假活"死链）；
+#  3) 已推送的隧道地址会定期复检，失效则自动【关→开】隧道并推送新链接(自愈)；
+#  4) 局域网 IP 变化 → 也推送新地址；
+#  5) 持续写 ds-mobile-url.txt 与 ds-mobile-bridge.log。
 param([switch]$Once)
 $ErrorActionPreference = 'SilentlyContinue'
-$cfgDir   = 'D:/DeepSeekHarness'
+$cfgDir   = if ($env:DSH_MOBILE_DIR) { $env:DSH_MOBILE_DIR } elseif ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
 $statePath= "$cfgDir/ds-mobile-state.json"
 $urlPath  = "$cfgDir/ds-mobile-url.txt"
 $keyPath  = "$cfgDir/ds-phone-notify.json"
@@ -39,7 +40,8 @@ function Post-Json($path, $obj) {
     if (-not $out) { return $null }
     return ($out | ConvertFrom-Json)
   } catch { Log-Msg "post $path failed: $($_.Exception.Message)"; return $null }
-}function Gateway-Pid { $c = Get-NetTCPConnection -LocalPort $GW_PORT -State Listen -ErrorAction SilentlyContinue; if ($c) { $c[0].OwningProcess } else { $null } }
+}
+function Gateway-Pid { $c = Get-NetTCPConnection -LocalPort $GW_PORT -State Listen -ErrorAction SilentlyContinue; if ($c) { $c[0].OwningProcess } else { $null } }
 function Lan-Url {
   # 只取“有默认网关”的真实网卡地址（手机可达），避免误选 WSL/Hyper-V/Wi-Fi Direct 等虚拟网卡
   $gw = Get-NetRoute -DestinationPrefix '0.0.0.0/0' -ErrorAction SilentlyContinue |
@@ -63,6 +65,24 @@ function Tailnet-Url {
   if (-not $tsExe) { return '' }
   try { $ip = (& $tsExe ip -4 2>$null | Select-Object -First 1).Trim(); if ($ip) { "http://$ip`:$GW_PORT" } else { '' } } catch { '' }
 }
+# 隧道是否“真的活着”：公网 DNS 能解析出该域名（Cloudflare 快速隧道只有连上边缘后才发布记录）
+function Test-TunnelLive($url) {
+  if (-not $url) { return $false }
+  $host_ = ''
+  try { $host_ = ([uri]$url).Host } catch { return $false }
+  if (-not $host_) { return $false }
+  foreach ($srv in '1.1.1.1','8.8.8.8') {
+    try {
+      $r = Resolve-DnsName -Name $host_ -Server $srv -DnsOnly -ErrorAction Stop
+      if ($r | Where-Object { $_.IPAddress }) { return $true }
+    } catch {}
+  }
+  try {
+    $r = Resolve-DnsName -Name $host_ -DnsOnly -ErrorAction Stop
+    if ($r | Where-Object { $_.IPAddress }) { return $true }
+  } catch {}
+  return $false
+}
 function Push-Msg($title, $body, $url) {
   try { $cfg = Get-Content -Raw -Encoding UTF8 -LiteralPath $keyPath | ConvertFrom-Json } catch { return }
   if (-not $cfg.barkKey) { Log-Msg "push-skip(no barkKey) title=$title"; return }
@@ -76,19 +96,21 @@ function Push-Msg($title, $body, $url) {
   Log-Msg "push title=$title url=$url resp=$resp"
 }
 
-Log-Msg "monitor v4 start pid=$PID"
+Log-Msg "monitor v5 start pid=$PID"
 # 隧道意图：以“标志文件”为准（避免运行中的监视器用内存态覆盖手工修改）
 $flagOn  = Join-Path $cfgDir 'ds-mobile-tunnel.on'    # 存在 => 希望隧道保持开启
 $flagOff = Join-Path $cfgDir 'ds-mobile-tunnel.off'   # 存在 => 明确不要隧道
 $state = Read-State
-if (Test-Path -LiteralPath $flagOn)  { $state.tunnelDesired = $true }
-if (Test-Path -LiteralPath $flagOff) { $state.tunnelDesired = $false }
-if (-not $state) { $state = [pscustomobject]@{ lastGatewayPid=$null; tunnelDesired=$true; lastTunnelUrl=''; lastToggleAt=$null; toggleAttempts=0; lastLanUrl='' } }
-foreach ($f in 'lastGatewayPid','tunnelDesired','lastTunnelUrl','lastToggleAt','toggleAttempts','lastLanUrl') {
-  if ($null -eq $state.$f -and $f -notin 'lastToggleAt') { $state | Add-Member -NotePropertyName $f -NotePropertyValue '' -Force }
+if (-not $state) { $state = [pscustomobject]@{ lastGatewayPid=$null; tunnelDesired=$true; liveTunnelUrl=''; lastToggleAt=$null; toggleAttempts=0; lastLanUrl=''; deadSince=$null; healAttempts=0 } }
+if (Test-Path -LiteralPath $flagOn)  { $state | Add-Member -NotePropertyName tunnelDesired -NotePropertyValue $true  -Force }
+if (Test-Path -LiteralPath $flagOff) { $state | Add-Member -NotePropertyName tunnelDesired -NotePropertyValue $false -Force }
+foreach ($f in 'lastGatewayPid','tunnelDesired','liveTunnelUrl','lastLanUrl','deadSince','toggleAttempts','healAttempts') {
+  if ($null -eq $state.$f -and $f -notin 'lastToggleAt','deadSince') { $state | Add-Member -NotePropertyName $f -NotePropertyValue '' -Force }
 }
 
+$loop = 0
 for (;;) {
+  $loop++
   $gwPid = Gateway-Pid
   if (-not $gwPid) {
     if ($state.lastGatewayPid) { Log-Msg "gateway down (was pid=$($state.lastGatewayPid))"; $state.lastGatewayPid=$null; Write-State $state }
@@ -119,18 +141,56 @@ for (;;) {
   }
   if ($active) { $state.toggleAttempts = 0; $state.lastToggleAt = $null }
 
+  # ---- 隧道：验证后推送 + 失效自愈 ----
+  if ($active -and $turl) {
+    $unverified = ($turl -ne $state.liveTunnelUrl)
+    $checkNow = $unverified -or ($loop % 5 -eq 0)      # 待验证每轮查；已验证每 60s 复检
+    if ($checkNow) {
+      $live = Test-TunnelLive $turl
+      if ($unverified) {
+        if ($live) {
+          $state.liveTunnelUrl = $turl
+          $state.deadSince = $null
+          $state.healAttempts = 0
+          Log-Msg "tunnel verified live: $turl"
+          Push-Msg 'DSH 访问链接已更新（已验证）' '点此打开 → 重新连接（会自动批准）。' $turl
+        } else {
+          Log-Msg "new tunnel url NOT live yet (dns pending/failed): $turl"
+        }
+      } else {
+        if ($live) {
+          $state.deadSince = $null
+        } else {
+          if (-not $state.deadSince) {
+            $state.deadSince = $nowMs
+            Log-Msg "tunnel dns check failed (watching): $turl"
+          } elseif (($nowMs - [int64]$state.deadSince) -gt 60000) {
+            if ($connected) {
+              Log-Msg 'self-heal skipped: a phone is connected'
+            } elseif ([int]$state.healAttempts -ge 3) {
+              Log-Msg 'self-heal giving up (3 attempts used)'
+            } else {
+              $state.healAttempts = [int]$state.healAttempts + 1
+              Log-Msg "self-heal: restarting tunnel (attempt $($state.healAttempts))"
+              $null = Post-Json '/desktop/tunnel/toggle' @{ enable = $false }
+              Start-Sleep -Seconds 3
+              $null = Post-Json '/desktop/tunnel/toggle' @{ enable = $true }
+              $state.liveTunnelUrl = ''
+              $state.deadSince = $null
+            }
+          }
+        }
+      }
+    }
+  }
+
   $lan = Lan-Url
   $best = ''
-  if ($active -and $turl) { $best = $turl }
+  if ($active -and $state.liveTunnelUrl) { $best = $state.liveTunnelUrl }   # 只缓存“已验证可用”的隧道地址
   if (-not $best) { $best = Tailnet-Url }
   if (-not $best) { $best = $lan }
   if ($best) { try { [System.IO.File]::WriteAllText($urlPath, $best, (New-Object System.Text.UTF8Encoding($false))) } catch {} }
 
-  # 隧道 URL 变化 → 推送
-  if ($active -and $turl -and $turl -ne $state.lastTunnelUrl) {
-    $state.lastTunnelUrl = $turl
-    Push-Msg 'DSH 访问链接已更新' '点此重新连接(在电脑上批准一次即可)。' $turl
-  }
   # 局域网地址变化 → 推送(手机存的旧地址会失效，这是最常见的“打不开”原因)
   if ($lan -and $lan -ne $state.lastLanUrl) {
     $prev = $state.lastLanUrl
