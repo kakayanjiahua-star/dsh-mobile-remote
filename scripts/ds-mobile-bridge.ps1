@@ -29,12 +29,12 @@ function Get-Json($path) {
     return ($out | ConvertFrom-Json)
   } catch { return $null }
 }
-function Post-Json($path, $obj) {
+function Post-Json($path, $obj, $timeoutSec = 25) {
   try {
     $body = $obj | ConvertTo-Json -Compress
     $tmp = Join-Path $env:TEMP ('ds-post-' + [guid]::NewGuid().ToString('N') + '.json')
     [System.IO.File]::WriteAllText($tmp, $body, (New-Object System.Text.UTF8Encoding($false)))
-    $out = (& curl.exe -s --noproxy "*" --max-time 25 -X POST -H "Content-Type: application/json" --data-binary "@$tmp" ($Base + $path) 2>$null | Out-String).Trim()
+    $out = (& curl.exe -s --noproxy "*" --max-time $timeoutSec -X POST -H "Content-Type: application/json" --data-binary "@$tmp" ($Base + $path) 2>$null | Out-String).Trim()
     Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue
     Log-Msg "post $path -> $out"
     if (-not $out) { return $null }
@@ -135,7 +135,7 @@ for (;;) {
       $state.lastToggleAt = $nowMs
       if ($state.toggleAttempts -le 4) {
         Log-Msg "auto-enable tunnel attempt $($state.toggleAttempts)"
-        $null = Post-Json '/desktop/tunnel/toggle' @{ enable = $true }
+        $null = Post-Json '/desktop/tunnel/toggle' @{ enable = $true } 150
       } else { Log-Msg 'auto-enable giving up (retry next restart)' }
     }
   }
@@ -172,9 +172,9 @@ for (;;) {
             } else {
               $state.healAttempts = [int]$state.healAttempts + 1
               Log-Msg "self-heal: restarting tunnel (attempt $($state.healAttempts))"
-              $null = Post-Json '/desktop/tunnel/toggle' @{ enable = $false }
+              $null = Post-Json '/desktop/tunnel/toggle' @{ enable = $false } 150
               Start-Sleep -Seconds 3
-              $null = Post-Json '/desktop/tunnel/toggle' @{ enable = $true }
+              $null = Post-Json '/desktop/tunnel/toggle' @{ enable = $true } 150
               $state.liveTunnelUrl = ''
               $state.deadSince = $null
             }
