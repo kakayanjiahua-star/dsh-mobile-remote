@@ -164,14 +164,18 @@ for (;;) {
           if (-not $state.deadSince) {
             $state.deadSince = $nowMs
             Log-Msg "tunnel dns check failed (watching): $turl"
-          } elseif (($nowMs - [int64]$state.deadSince) -gt 60000) {
-            if ($connected) {
-              Log-Msg 'self-heal skipped: a phone is connected'
-            } elseif ([int]$state.healAttempts -ge 3) {
+          } elseif (($nowMs - [int64]$state.deadSince) -gt 120000) {
+            if ([int]$state.healAttempts -ge 3) {
               Log-Msg 'self-heal giving up (3 attempts used)'
             } else {
               $state.healAttempts = [int]$state.healAttempts + 1
-              Log-Msg "self-heal: restarting tunnel (attempt $($state.healAttempts))"
+              if ($connected) {
+                Log-Msg "self-heal: tunnel dead - disconnecting the session, then restarting tunnel (attempt $($state.healAttempts))"
+                $null = Post-Json '/desktop/disconnect' @{} 30
+                Start-Sleep -Seconds 2
+              } else {
+                Log-Msg "self-heal: restarting tunnel (attempt $($state.healAttempts))"
+              }
               $null = Post-Json '/desktop/tunnel/toggle' @{ enable = $false } 150
               Start-Sleep -Seconds 3
               $null = Post-Json '/desktop/tunnel/toggle' @{ enable = $true } 150
